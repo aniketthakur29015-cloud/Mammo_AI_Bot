@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MammoBot - AI Breast Cancer Screening</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #fff5f7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Container */
+.chat-container {
+    width: 380px;
+    height: 600px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header */
+.chat-header {
+    background: #ff6b81;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Chat Box */
+.chat-box {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background: #fff0f3;
+}
+
+/* Messages */
+.message {
+    max-width: 75%;
+    padding: 10px 14px;
+    margin: 8px 0;
+    border-radius: 15px;
+    font-size: 14px;
+}
+
+.bot {
+    background: #ffd6dc;
+    color: #333;
+    margin-right: auto;
+}
+
+.user {
+    background: #ff6b81;
+    color: white;
+    margin-left: auto;
+}
+
+/* Input */
+.chat-input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+
+.chat-input button {
+    margin-left: 10px;
+    background: #ff6b81;
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+/* Risk Box */
+.risk-box {
+    background: #ffe3e8;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">MammoBot 💗</div>
+
+    <div class="chat-box" id="chatBox">
+        <div class="message bot">
+            Hello! I'm MammoBot. I’ll ask a few quick questions to assess breast cancer risk. This is not a diagnosis.
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="userInput" placeholder="Type your answer...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+<script>
+let step = 0;
+let score = 0;
+let restartMode = false;
+
+const questions = [
+    "May I know your age?",
+    "Do you have a family history of breast cancer? (Yes/No)",
+    "Have you noticed any lump in your breast? (Yes/No)",
+    "Have you observed any change in breast size or shape? (Yes/No)",
+    "Are you experiencing any unusual nipple discharge? (Yes/No)"
+];
+
+function sendMessage() {
+    let input = document.getElementById("userInput");
+    let msg = input.value.trim();
+
+    if (msg === "") return;
+
+    addMessage(msg, "user");
+    input.value = "";
+
+    processAnswer(msg);
+}
+
+function addMessage(text, sender) {
+    let chatBox = document.getElementById("chatBox");
+    let div = document.createElement("div");
+    div.classList.add("message", sender);
+    div.innerText = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function isYesNo(input) {
+    input = input.toLowerCase();
+    return ["yes", "no", "y", "n"].includes(input);
+}
+
+function processAnswer(answer) {
+    setTimeout(() => {
+
+        // 🔁 RESTART MODE
+        if (restartMode) {
+            if (!isYesNo(answer)) {
+                addMessage("Please reply with 'Yes' or 'No'. Would you like to start the screening again?", "bot");
+                return;
+            }
+
+            if (answer.toLowerCase().startsWith("y")) {
+                resetChat();
+                addMessage("Great! Let's begin a new screening.", "bot");
+                addMessage(questions[0], "bot");
+            } else {
+                addMessage("Thank you for using MammoBot. Stay healthy and take care! 💗", "bot");
+            }
+
+            restartMode = false;
+            return;
+        }
+
+        // AGE VALIDATION
+        if (step === 0) {
+            let age = parseInt(answer);
+
+            if (isNaN(age) || age <= 0 || age > 120) {
+                addMessage("Please enter a valid age (for example: 25, 40, etc.).", "bot");
+                return;
+            }
+
+            if (age >= 40) score += 2;
+            else if (age >= 30) score += 1;
+        }
+
+        // YES/NO VALIDATION
+        else {
+            if (!isYesNo(answer)) {
+                addMessage("Kindly respond with 'Yes' or 'No' so I can assess your condition accurately.", "bot");
+                return;
+            }
+
+            if (answer.toLowerCase().startsWith("y")) {
+                score += 2;
+            }
+        }
+
+        step++;
+
+        if (step < questions.length) {
+            addMessage(questions[step], "bot");
+        } else {
+            showResult();
+        }
+
+    }, 600);
+}
+
+function showResult() {
+    let riskLevel = "";
+    let advice = "";
+
+    if (score <= 2) {
+        riskLevel = "Low Risk ✅";
+        advice = "Your responses indicate a low level of risk. However, regular self-examinations and routine checkups are still recommended.";
+    } 
+    else if (score <= 6) {
+        riskLevel = "Moderate Risk ⚠️";
+        advice = "There are some signs that may require attention. It is advisable to consult a healthcare professional for further evaluation.";
+    } 
+    else {
+        riskLevel = "High Risk 🚨";
+        advice = "Your responses suggest a higher risk level. Please consult a doctor or oncologist as soon as possible for proper screening.";
+    }
+
+    addMessage("Thank you for providing the details. Here is your preliminary assessment:", "bot");
+
+    let result = document.createElement("div");
+    result.classList.add("risk-box");
+    result.innerHTML = `
+        <b>Risk Level:</b> ${riskLevel} <br><br>
+        ${advice} <br><br>
+        ⚠️ <b>Disclaimer:</b> This is not a medical diagnosis.
+    `;
+
+    document.getElementById("chatBox").appendChild(result);
+
+    // 🔁 Ask for restart
+    setTimeout(() => {
+        addMessage("Would you like to perform the screening again? (Yes/No)", "bot");
+        restartMode = true;
+    }, 800);
+}
+
+// 🔄 Reset function
+function resetChat() {
+    step = 0;
+    score = 0;
+}
+
+// Start conversation
+setTimeout(() => {
+    addMessage("Hello! I am MammoBot, your virtual assistant for early breast cancer screening.", "bot");
+    addMessage(questions[0], "bot");
+}, 800);
+</script>
+
+</body>
+</html>
